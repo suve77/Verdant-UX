@@ -1864,7 +1864,7 @@ function RoleSheets() {
             <tr>
               <Th>Role / Managing Point / Control Point</Th>
               <Th>UOM</Th>
-              <Th>Standard / Target</Th>
+              <Th>Standard</Th>
               <Th>Frequency</Th>
               <Th>Polarity</Th>
               <Th>Responsible</Th>
