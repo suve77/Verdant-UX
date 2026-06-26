@@ -62,35 +62,35 @@ const orgNodes = [
 ];
 
 const goals = [
-  { id: "g1", type: "CE", source: "Internal",
+  { id: "g1", type: "CE", source: "Internal", sourceDetail: "ISO 50001 Energy Review FY25", dataFreq: "Monthly",
     statement: "Reduce specific heat consumption (SHC) from 748 to 720 kcal/kg clinker through optimised combustion, false air elimination, and raw mix homogenisation.",
     mp: "Specific Heat Consumption (SHC)", uom: "kcal/kg clinker",
     baseline: 748, target: 720, ucl: 775, lcl: 690,
     responsible: "Thermal Process Engineer", reviewFreq: "Monthly",
     checkpoints: [{ period: "Q1", target: 742 }, { period: "Q2", target: 735 }, { period: "Q3", target: 725 }, { period: "Q4", target: 720 }],
   },
-  { id: "g2", type: "CE", source: "Internal",
+  { id: "g2", type: "CE", source: "Internal", sourceDetail: "Operational Strategy FY25", dataFreq: "Monthly",
     statement: "Increase Alternative Fuel Substitution Rate (TSR%) from 12% to 18% through expanded waste fuel co-processing and AF logistics capability.",
     mp: "Thermal Substitution Rate (TSR%)", uom: "% of total heat from AF",
     baseline: 12, target: 18, ucl: null, lcl: 8,
     responsible: "Thermal Process Engineer", reviewFreq: "Monthly",
     checkpoints: [{ period: "Q1", target: 14 }, { period: "Q2", target: 15 }, { period: "Q3", target: 17 }, { period: "Q4", target: 18 }],
   },
-  { id: "g3", type: "CE", source: "Internal",
+  { id: "g3", type: "CE", source: "Internal", sourceDetail: "Capital Improvement Plan FY25", dataFreq: "Monthly",
     statement: "Reduce specific electrical energy consumption from 96 to 90 kWh/t cement through VFD installation, lighting upgrades, and compressed air optimisation.",
     mp: "Specific Electrical Energy Consumption", uom: "kWh / tonne cement",
     baseline: 96, target: 90, ucl: 105, lcl: 78,
     responsible: "Electrical Engineer", reviewFreq: "Monthly",
     checkpoints: [{ period: "Q1", target: 95 }, { period: "Q2", target: 93 }, { period: "Q3", target: 91 }, { period: "Q4", target: 90 }],
   },
-  { id: "g4", type: "PD", source: "Internal",
+  { id: "g4", type: "PD", source: "Internal", sourceDetail: "3-Year Capital Plan 2024–2027", dataFreq: "Quarterly",
     statement: "Commission Waste Heat Recovery (WHR) system to generate 8 MW power from kiln preheater and cooler exhaust by Q3 FY25-26, reducing grid electricity dependency by 15%.",
     mp: "WHR Power Generation Capacity", uom: "MW commissioned",
     baseline: 0, target: 8, ucl: null, lcl: null,
     responsible: "Plant Energy & Environment Manager", reviewFreq: "Quarterly",
     checkpoints: [{ period: "Q1", target: 0, note: "Civil works complete" }, { period: "Q2", target: 0, note: "Equipment erection" }, { period: "Q3", target: 8, note: "Commissioned" }, { period: "Q4", target: 8, note: "Stabilised" }],
   },
-  { id: "g5", type: "CE", source: "External / Regulatory",
+  { id: "g5", type: "CE", source: "External / Regulatory", sourceDetail: "CPCB Notification · GHG Protocol Cement", dataFreq: "Monthly",
     statement: "Maintain kiln stack PM10 below CPCB norms and report Scope 1 CO₂ intensity below 600 kg CO₂/t cement under GHG Protocol — Cement Sector.",
     mp: "Net CO₂ Intensity", uom: "kg CO₂ / tonne cement",
     baseline: 620, target: 600, ucl: 640, lcl: null,
@@ -1047,6 +1047,17 @@ const goalTypeLabel: Record<string, string> = {
 
 function GoalsRegister() {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [policyOpen, setPolicyOpen] = useState(true);
+
+  const visions = [
+    "To be the global benchmark for decarbonised cement manufacturing, achieving net zero Scope 1 and 2 emissions across all operations by 2035.",
+    "Deliver superior shareholder value by transforming our energy cost structure and carbon risk profile into a durable competitive advantage by 2035.",
+  ];
+  const strategies = [
+    "Accelerate energy efficiency and alternative fuel adoption to reduce carbon intensity while maintaining cost competitiveness across all kilns.",
+    "Reduce specific energy costs by 8% through operational excellence, positioning the business ahead of carbon pricing and regulatory tightening.",
+  ];
+  const kfas = ["Thermal efficiency", "Alternative fuel adoption", "Electrical energy reduction", "Waste heat recovery", "GHG compliance"];
 
   return (
     <div>
@@ -1128,6 +1139,106 @@ function GoalsRegister() {
         </div>
       )}
 
+      {/* ── Policy Context ── */}
+      <div style={{ background: T.card, border: `1.5px solid ${T.border}`, borderRadius: "10px", overflow: "hidden", marginBottom: "16px" }}>
+        <div
+          onClick={() => setPolicyOpen(p => !p)}
+          style={{ background: T.sidebar, padding: "11px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"
+              style={{ transform: policyOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }}>
+              <path d="M2.5 4.5L6.5 8.5L10.5 4.5" stroke={T.sidebarActive} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span style={{ fontFamily: T.heading, fontWeight: 600, fontSize: "13px", color: "white" }}>Policy context</span>
+            <span style={{ fontSize: "10px", color: T.sidebarText, opacity: 0.7 }}>Vision · Strategy · Key Focus Areas</span>
+          </div>
+          <button
+            onClick={e => { e.stopPropagation(); setShowCreateModal(true); }}
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: T.sidebarActive, color: T.sidebar, border: "none", borderRadius: "7px", padding: "6px 14px", fontSize: "11.5px", fontWeight: 700, fontFamily: T.body, cursor: "pointer" }}
+          >
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <path d="M5.5 1v9M1 5.5h9" stroke={T.sidebar} strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+            Create
+          </button>
+        </div>
+
+        {policyOpen && (
+          <div style={{ padding: "16px 18px", background: T.bg }}>
+
+            {/* Vision */}
+            <div style={{ marginBottom: "14px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "7px" }}>
+                <div style={{ fontSize: "9px", fontWeight: 700, color: T.textSub, textTransform: "uppercase", letterSpacing: "0.8px" }}>Vision</div>
+                <button style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10.5px", fontWeight: 600, color: T.accent, background: "none", border: "none", cursor: "pointer", fontFamily: T.body }}>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke={T.accent} strokeWidth="1.6" strokeLinecap="round" /></svg>
+                  Add vision
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
+                {visions.map((v, i) => (
+                  <div key={i} style={{ background: T.sidebar, borderRadius: "8px", padding: "11px 14px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px" }}>
+                    <div style={{ fontFamily: T.heading, fontSize: "12px", fontWeight: 500, color: "white", lineHeight: 1.5, flex: 1 }}>{v}</div>
+                    <div style={{ display: "flex", gap: "5px", flexShrink: 0, marginTop: "1px" }}>
+                      <button style={{ width: "22px", height: "22px", background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1 8.5L3.5 9l6-6L7 .5 1 6.5z" stroke={T.sidebarText} strokeWidth="1.2" /></svg>
+                      </button>
+                      <button style={{ width: "22px", height: "22px", background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke={T.sidebarText} strokeWidth="1.4" strokeLinecap="round" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Strategy */}
+            <div style={{ borderLeft: `2px solid ${T.border}`, marginLeft: "10px", paddingLeft: "14px", marginBottom: "14px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "7px" }}>
+                <div style={{ fontSize: "9px", fontWeight: 700, color: T.textSub, textTransform: "uppercase", letterSpacing: "0.8px" }}>Strategy FY 2025–26</div>
+                <button style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10.5px", fontWeight: 600, color: T.accent, background: "none", border: "none", cursor: "pointer", fontFamily: T.body }}>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke={T.accent} strokeWidth="1.6" strokeLinecap="round" /></svg>
+                  Add strategy
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
+                {strategies.map((s, i) => (
+                  <div key={i} style={{ background: T.accent, borderRadius: "8px", padding: "11px 14px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px" }}>
+                    <div style={{ fontFamily: T.heading, fontSize: "12px", fontWeight: 500, color: "white", lineHeight: 1.5, flex: 1 }}>{s}</div>
+                    <div style={{ display: "flex", gap: "5px", flexShrink: 0, marginTop: "1px" }}>
+                      <button style={{ width: "22px", height: "22px", background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1 8.5L3.5 9l6-6L7 .5 1 6.5z" stroke="rgba(255,255,255,0.8)" strokeWidth="1.2" /></svg>
+                      </button>
+                      <button style={{ width: "22px", height: "22px", background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="rgba(255,255,255,0.8)" strokeWidth="1.4" strokeLinecap="round" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* KFAs */}
+            <div style={{ borderLeft: `2px solid ${T.border}`, marginLeft: "10px", paddingLeft: "14px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "7px" }}>
+                <div style={{ fontSize: "9px", fontWeight: 700, color: T.textSub, textTransform: "uppercase", letterSpacing: "0.8px" }}>Key focus areas</div>
+                <button style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10.5px", fontWeight: 600, color: T.accent, background: "none", border: "none", cursor: "pointer", fontFamily: T.body }}>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke={T.accent} strokeWidth="1.6" strokeLinecap="round" /></svg>
+                  Add KFA
+                </button>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {kfas.map((k, i) => (
+                  <span key={i} style={{ fontSize: "11px", fontWeight: 600, padding: "4px 12px", borderRadius: "6px", background: T.successBg, color: T.successText, border: `1.5px solid ${T.success}33`, fontFamily: T.body }}>{k}</span>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        )}
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
         {goals.map(g => {
           const typeLabel = goalTypeLabel[g.type] ?? g.type;
@@ -1137,13 +1248,17 @@ function GoalsRegister() {
           const srcColor  = g.source === "Internal" ? T.textSub : T.amberText;
           return (
             <Card key={g.id}>
-              {/* Header row — type shown as full label in left border stripe */}
-              <div style={{ padding: "14px 18px", borderBottom: `1.5px solid ${T.border}`, display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "5px", flexShrink: 0, marginTop: "2px" }}>
+              {/* Header row */}
+              <div style={{ padding: "14px 18px", borderBottom: `1.5px solid ${T.border}` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "8px", flexWrap: "wrap" }}>
                   <Badge label={typeLabel} color={typeColor} bg={typeBg} />
-                  <Badge label={g.source}  color={srcColor}  bg={srcBg} />
+                  <Badge label={g.source} color={srcColor} bg={srcBg} />
+                  {(g as any).sourceDetail && (
+                    <span style={{ fontSize: "11px", color: T.textSub, fontStyle: "italic" }}>{(g as any).sourceDetail}</span>
+                  )}
+                  <span style={{ marginLeft: "auto", fontSize: "10px", fontWeight: 700, padding: "2px 9px", borderRadius: "5px", background: T.bg, color: T.textSub, border: `1.5px solid ${T.border}`, whiteSpace: "nowrap" }}>{site.period}</span>
                 </div>
-                <p style={{ fontSize: "12.5px", color: T.text, margin: 0, lineHeight: 1.6, flex: 1 }}>{g.statement}</p>
+                <p style={{ fontSize: "12.5px", color: T.text, margin: 0, lineHeight: 1.6 }}>{g.statement}</p>
               </div>
               {/* Detail grid */}
               <div style={{ padding: "12px 18px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", borderBottom: `1.5px solid ${T.border}` }}>
