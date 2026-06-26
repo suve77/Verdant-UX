@@ -1,4 +1,4 @@
-import { useState, Fragment, type ReactNode, type CSSProperties } from "react";
+import { useState, useEffect, Fragment, type ReactNode, type CSSProperties } from "react";
 import { HashRouter, Routes, Route, useNavigate, useLocation } from "react-router";
 import {
   LayoutDashboard, Network, Target, ClipboardList,
@@ -52,13 +52,13 @@ const site = {
 };
 
 const orgNodes = [
-  { id: "cso",     title: "CSO / Head of Sustainability",          tier: 1, reportsTo: null,  ghgScope: "All (1·2·3)", iso: "Top Management",       authority: "Strategic",              disclosure: "All frameworks" },
-  { id: "em",      title: "Plant Energy & Environment Manager",     tier: 2, reportsTo: "cso",  ghgScope: "All (1·2·3)", iso: "Mgmt Representative", authority: "Strategic · Operational", disclosure: "CDP · GRI" },
-  { id: "thermal", title: "Thermal Process Engineer",               tier: 3, reportsTo: "em",   ghgScope: "Scope 1, 2",  iso: "Energy Team",          authority: "Operational",            disclosure: "—" },
-  { id: "elec",    title: "Electrical Engineer",                    tier: 3, reportsTo: "em",   ghgScope: "Scope 2",     iso: "Energy Team",          authority: "Operational",            disclosure: "—" },
-  { id: "ghg",     title: "GHG & Environment Officer",             tier: 3, reportsTo: "em",   ghgScope: "All (1·2·3)", iso: "Energy Team",          authority: "Operational",            disclosure: "GHG Protocol · TCFD" },
-  { id: "esg",     title: "ESG Reporting Officer",                  tier: 3, reportsTo: "em",   ghgScope: "All (1·2·3)", iso: "Energy Team",          authority: "Operational",            disclosure: "CDP · GRI · CSRD" },
-  { id: "site",    title: "Plant Energy Coordinator ×N",            tier: 4, reportsTo: "em",   ghgScope: "Scope 1, 2",  iso: "Energy Team",          authority: "Data Contributor",       disclosure: "Site data" },
+  { id: "cso",     title: "CSO / Head of Sustainability",          tier: 1, reportsTo: null,       ghgScope: "All (1·2·3)", iso: "Top Management",        authority: "Strategic",              disclosure: "All frameworks",     esgilar: "E · S · G",  energyDomain: "All domains",             frameworkOwnership: "CDP · GRI · TCFD · CSRD", siteCoverage: "All sites",       dataStewardship: "Tier 1 signatory",     externalAssurance: "Subject",         gradeLevel: "C-Suite" },
+  { id: "em",      title: "Plant Energy & Environment Manager",     tier: 2, reportsTo: "cso",      ghgScope: "All (1·2·3)", iso: "Mgmt Representative",   authority: "Strategic · Operational", disclosure: "CDP · GRI",          esgilar: "E",          energyDomain: "Thermal · Electrical · GHG",  frameworkOwnership: "CDP · GRI",                siteCoverage: "All sites",       dataStewardship: "Plant data owner",     externalAssurance: "Contributor",     gradeLevel: "L6" },
+  { id: "thermal", title: "Thermal Process Engineer",               tier: 3, reportsTo: "em",       ghgScope: "Scope 1, 2",  iso: "Energy Team",           authority: "Operational",            disclosure: "—",                  esgilar: "E",          energyDomain: "Thermal · AF",                frameworkOwnership: "—",                        siteCoverage: "Kiln 2",          dataStewardship: "Kiln energy data",     externalAssurance: "—",               gradeLevel: "L4" },
+  { id: "elec",    title: "Electrical Engineer",                    tier: 3, reportsTo: "em",       ghgScope: "Scope 2",     iso: "Energy Team",           authority: "Operational",            disclosure: "—",                  esgilar: "E",          energyDomain: "Electrical",                  frameworkOwnership: "—",                        siteCoverage: "All sections",    dataStewardship: "Electrical meter data",externalAssurance: "—",               gradeLevel: "L4" },
+  { id: "ghg",     title: "GHG & Environment Officer",             tier: 3, reportsTo: "em",       ghgScope: "All (1·2·3)", iso: "Energy Team",           authority: "Operational",            disclosure: "GHG Protocol · TCFD",esgilar: "E",          energyDomain: "GHG · Environment",           frameworkOwnership: "GHG Protocol · TCFD",      siteCoverage: "All sites",       dataStewardship: "GHG inventory",        externalAssurance: "Primary subject", gradeLevel: "L4" },
+  { id: "esg",     title: "ESG Reporting Officer",                  tier: 3, reportsTo: "em",       ghgScope: "All (1·2·3)", iso: "Energy Team",           authority: "Operational",            disclosure: "CDP · GRI · CSRD",   esgilar: "E · S · G",  energyDomain: "All",                         frameworkOwnership: "CDP · GRI · CSRD",         siteCoverage: "All sites",       dataStewardship: "Disclosure data",      externalAssurance: "Primary subject", gradeLevel: "L4" },
+  { id: "site",    title: "Plant Energy Coordinator ×N",            tier: 4, reportsTo: "thermal",  ghgScope: "Scope 1, 2",  iso: "Energy Team",           authority: "Data Contributor",       disclosure: "Site data",          esgilar: "E",          energyDomain: "Site metering",               frameworkOwnership: "—",                        siteCoverage: "Specific sites",  dataStewardship: "Site-level meter data",externalAssurance: "—",               gradeLevel: "L2" },
 ];
 
 const goals = [
@@ -761,18 +761,40 @@ const tierConfig: Record<number, { bg: string; text: string; dot: string; border
   4: { bg: T.bg,           text: T.textSub,  dot: T.textMuted,     border: T.border },
 };
 
-function OrgCard({ node }: { node: typeof orgNodes[0] }) {
+const ORG_ATTRS: { key: string; field: string }[] = [
+  { key: "Authority level",      field: "authority" },
+  { key: "GHG scope",            field: "ghgScope" },
+  { key: "ISO 50001 role",       field: "iso" },
+  { key: "ESG pillar",           field: "esgilar" },
+  { key: "Energy domain",        field: "energyDomain" },
+  { key: "Framework ownership",  field: "frameworkOwnership" },
+  { key: "Site / boundary",      field: "siteCoverage" },
+  { key: "Data stewardship",     field: "dataStewardship" },
+  { key: "Disclosure ownership", field: "disclosure" },
+  { key: "External assurance",   field: "externalAssurance" },
+  { key: "Grade / level",        field: "gradeLevel" },
+];
+
+function OrgCard({ node, selectedId, onSelect }: { node: typeof orgNodes[0]; selectedId: string | null; onSelect: (id: string) => void }) {
   const tc = tierConfig[node.tier];
+  const isSel = selectedId === node.id;
+  const dotColor = tc.dot === "white" ? T.sidebarActive : tc.dot;
   return (
-    <div style={{
-      background: tc.bg,
-      border: `1.5px solid ${tc.border}`,
-      borderRadius: "10px",
-      padding: "14px",
-      minWidth: "172px",
-      maxWidth: "200px",
-      fontFamily: T.body,
-    }}>
+    <div
+      onClick={e => { e.stopPropagation(); onSelect(node.id); }}
+      style={{
+        background: tc.bg,
+        border: isSel ? `2.5px solid ${T.sidebarActive}` : `1.5px solid ${tc.border}`,
+        borderRadius: "10px",
+        padding: "14px",
+        minWidth: "165px",
+        maxWidth: "185px",
+        fontFamily: T.body,
+        cursor: "pointer",
+        boxShadow: isSel ? `0 0 0 3px ${T.sidebarActive}33` : "none",
+        transition: "all 0.15s",
+      }}
+    >
       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
         <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: tc.dot, flexShrink: 0 }} />
         <span style={{ fontSize: "9px", fontWeight: 700, color: tc.text, opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.8px" }}>
@@ -782,7 +804,7 @@ function OrgCard({ node }: { node: typeof orgNodes[0] }) {
       <div style={{ fontWeight: 600, fontSize: "12px", color: tc.text, lineHeight: 1.4, marginBottom: "10px", fontFamily: T.heading }}>
         {node.title}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "3px", marginBottom: "8px" }}>
         {[
           { label: "Authority", val: node.authority },
           { label: "GHG Scope", val: node.ghgScope },
@@ -793,32 +815,37 @@ function OrgCard({ node }: { node: typeof orgNodes[0] }) {
           </div>
         ))}
       </div>
+      <div style={{ fontSize: "9px", fontWeight: 600, color: isSel ? dotColor : `${dotColor}99` }}>
+        {isSel ? "▲ close" : "▼ all attributes"}
+      </div>
     </div>
   );
 }
 
 function OrgChart() {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const tier1 = orgNodes.filter(n => n.tier === 1);
   const tier2 = orgNodes.filter(n => n.tier === 2);
   const tier3 = orgNodes.filter(n => n.tier === 3);
-  const tier4 = orgNodes.filter(n => n.tier === 4);
+  const selectedNode = orgNodes.find(n => n.id === selectedId) ?? null;
+
+  const handleSelect = (id: string) => setSelectedId(prev => prev === id ? null : id);
+
+  useEffect(() => {
+    const handler = () => setSelectedId(null);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, []);
 
   return (
     <div>
-      {/* Compact action bar — no redundant title since TopBar already shows breadcrumb */}
+      {/* Action bar */}
       <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        background: T.card,
-        border: `1.5px solid ${T.border}`,
-        borderRadius: "10px",
-        padding: "10px 14px",
-        marginBottom: "16px",
-        gap: "12px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        background: T.card, border: `1.5px solid ${T.border}`,
+        borderRadius: "10px", padding: "10px 14px", marginBottom: "16px", gap: "12px",
       }}>
-        {/* Context chips */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
           {[
             { label: site.company,    icon: "🏭" },
@@ -829,8 +856,7 @@ function OrgChart() {
               display: "inline-flex", alignItems: "center", gap: "5px",
               background: T.bg, border: `1.5px solid ${T.border}`,
               borderRadius: "6px", padding: "4px 10px",
-              fontSize: "11px", fontWeight: 500, color: T.textSub,
-              fontFamily: T.body,
+              fontSize: "11px", fontWeight: 500, color: T.textSub, fontFamily: T.body,
             }}>
               <span style={{ fontSize: "10px" }}>{chip.icon}</span>
               {chip.label}
@@ -838,26 +864,16 @@ function OrgChart() {
           ))}
         </div>
         <button
-          onClick={() => setShowCreateModal(true)}
+          onClick={e => { e.stopPropagation(); setShowCreateModal(true); }}
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "7px",
-            background: T.accent,
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            padding: "9px 18px",
-            fontSize: "12.5px",
-            fontWeight: 600,
-            fontFamily: T.body,
-            cursor: "pointer",
-            boxShadow: `0 2px 8px ${T.accent}55`,
-            transition: "all 0.15s ease",
-            flexShrink: 0,
+            display: "flex", alignItems: "center", gap: "7px",
+            background: T.accent, color: "white",
+            border: "none", borderRadius: "8px", padding: "9px 18px",
+            fontSize: "12.5px", fontWeight: 600, fontFamily: T.body,
+            cursor: "pointer", boxShadow: `0 2px 8px ${T.accent}55`, flexShrink: 0,
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = "#0284C7"; e.currentTarget.style.boxShadow = `0 4px 14px ${T.accent}66`; }}
-          onMouseLeave={e => { e.currentTarget.style.background = T.accent; e.currentTarget.style.boxShadow = `0 2px 8px ${T.accent}55`; }}
+          onMouseEnter={e => { e.currentTarget.style.background = "#0284C7"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = T.accent; }}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M7 2v10M2 7h10" stroke="white" strokeWidth="2" strokeLinecap="round" />
@@ -866,111 +882,158 @@ function OrgChart() {
         </button>
       </div>
 
-      {/* Coming-soon modal placeholder */}
+      {/* Coming-soon modal */}
       {showCreateModal && (
-        <div
-          onClick={() => setShowCreateModal(false)}
-          style={{
-            position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)",
-            display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
-          }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: T.card, borderRadius: "14px", padding: "32px 36px",
-              border: `1.5px solid ${T.border}`, maxWidth: "440px", width: "100%",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
-            }}
-          >
+        <div onClick={() => setShowCreateModal(false)} style={{
+          position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: T.card, borderRadius: "14px", padding: "32px 36px",
+            border: `1.5px solid ${T.border}`, maxWidth: "440px", width: "100%",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+          }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
-              <div style={{
-                width: "40px", height: "40px", borderRadius: "10px",
-                background: T.accentLight, display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: T.accentLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Network size={20} color={T.accent} />
               </div>
               <div>
-                <div style={{ fontFamily: T.heading, fontWeight: 700, fontSize: "16px", color: T.text }}>
-                  Create Org
-                </div>
-                <div style={{ fontSize: "11px", color: T.textSub, marginTop: "1px" }}>
-                  Organisation builder — coming soon
-                </div>
+                <div style={{ fontFamily: T.heading, fontWeight: 700, fontSize: "16px", color: T.text }}>Create Org</div>
+                <div style={{ fontSize: "11px", color: T.textSub, marginTop: "1px" }}>Organisation builder — coming soon</div>
               </div>
             </div>
             <p style={{ fontSize: "12.5px", color: T.textSub, lineHeight: 1.65, margin: "0 0 20px" }}>
               The organisation builder will let you define positions, tiers, reporting lines, GHG scope assignments, ISO 50001 roles, and disclosure responsibilities — and generate this chart automatically.
             </p>
             <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                style={{
-                  padding: "8px 18px", borderRadius: "7px", fontSize: "12px", fontWeight: 600,
-                  border: `1.5px solid ${T.border}`, background: T.card, color: T.textSub,
-                  cursor: "pointer", fontFamily: T.body,
-                }}
-              >
-                Close
-              </button>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                style={{
-                  padding: "8px 18px", borderRadius: "7px", fontSize: "12px", fontWeight: 600,
-                  border: "none", background: T.accent, color: "white",
-                  cursor: "pointer", fontFamily: T.body,
-                }}
-              >
-                Got it
-              </button>
+              <button onClick={() => setShowCreateModal(false)} style={{ padding: "8px 18px", borderRadius: "7px", fontSize: "12px", fontWeight: 600, border: `1.5px solid ${T.border}`, background: T.card, color: T.textSub, cursor: "pointer", fontFamily: T.body }}>Close</button>
+              <button onClick={() => setShowCreateModal(false)} style={{ padding: "8px 18px", borderRadius: "7px", fontSize: "12px", fontWeight: 600, border: "none", background: T.accent, color: "white", cursor: "pointer", fontFamily: T.body }}>Got it</button>
             </div>
           </div>
         </div>
       )}
-      <Card style={{ padding: "28px", overflowX: "auto" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: "760px" }}>
-          {/* T1 */}
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            {tier1.map(n => <OrgCard key={n.id} node={n} />)}
+
+      {/* Master-detail card: tree left | attributes right */}
+      <Card style={{ padding: "0", overflow: "hidden", display: "flex", minHeight: "320px" }}>
+        {/* Tree — scrolls horizontally independently */}
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{ flex: 1, overflowX: "auto", borderRight: selectedId ? `1.5px solid ${T.border}` : "none" }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: "620px", padding: "28px 24px" }}>
+            {/* T1 */}
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              {tier1.map(n => <OrgCard key={n.id} node={n} selectedId={selectedId} onSelect={handleSelect} />)}
+            </div>
+            <div style={{ width: "2px", height: "28px", background: T.borderStrong }} />
+            {/* T2 */}
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              {tier2.map(n => <OrgCard key={n.id} node={n} selectedId={selectedId} onSelect={handleSelect} />)}
+            </div>
+            <div style={{ width: "2px", height: "20px", background: T.borderStrong }} />
+            <div style={{ borderTop: `2px solid ${T.borderStrong}`, width: "88%" }} />
+            {/* T3 + T4 (T4 hangs below its reportsTo T3 node) */}
+            <div style={{ display: "flex", justifyContent: "center", gap: "14px" }}>
+              {tier3.map(n => {
+                const children = orgNodes.filter(x => x.reportsTo === n.id && x.tier > n.tier);
+                return (
+                  <div key={n.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <div style={{ width: "2px", height: "24px", background: T.borderStrong }} />
+                    <OrgCard node={n} selectedId={selectedId} onSelect={handleSelect} />
+                    {children.map(c => (
+                      <Fragment key={c.id}>
+                        <div style={{ width: "2px", height: "16px", background: T.border }} />
+                        <OrgCard node={c} selectedId={selectedId} onSelect={handleSelect} />
+                      </Fragment>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          {/* T1→T2 connector */}
-          <div style={{ width: "2px", height: "28px", background: T.borderStrong }} />
-          {/* T2 */}
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            {tier2.map(n => <OrgCard key={n.id} node={n} />)}
-          </div>
-          {/* T2→T3 connectors */}
-          <div style={{ width: "2px", height: "20px", background: T.borderStrong }} />
-          <div style={{ borderTop: `2px solid ${T.borderStrong}`, width: "88%" }} />
-          {/* T3 + T4 */}
-          <div style={{ display: "flex", justifyContent: "center", gap: "14px" }}>
-            {[...tier3, ...tier4].map(n => (
-              <div key={n.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ width: "2px", height: "24px", background: T.borderStrong }} />
-                <OrgCard node={n} />
+        </div>
+
+        {/* Detail panel — slides in from right when a node is selected */}
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            width: selectedId ? "290px" : "0px",
+            flexShrink: 0,
+            overflow: "hidden",
+            transition: "width 0.2s ease",
+            background: T.card,
+          }}
+        >
+          {selectedNode && (
+            <div style={{ display: "flex", flexDirection: "column", height: "100%", minWidth: "290px" }}>
+              <div style={{ padding: "11px 14px", background: T.accentLight, borderBottom: `1.5px solid ${T.border}`, display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: tierConfig[selectedNode.tier].dot === "white" ? T.sidebarActive : tierConfig[selectedNode.tier].dot, flexShrink: 0 }} />
+                <span style={{ fontFamily: T.heading, fontWeight: 700, fontSize: "12px", color: T.accentText, flex: 1, lineHeight: 1.3 }}>{selectedNode.title}</span>
+                <button
+                  onClick={e => { e.stopPropagation(); setSelectedId(null); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: T.textMuted, fontSize: "18px", lineHeight: 1, padding: "2px 6px" }}
+                >×</button>
               </div>
-            ))}
-          </div>
+              <div style={{ padding: "14px", overflowY: "auto", flex: 1 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 12px" }}>
+                  {ORG_ATTRS.map(a => (
+                    <div key={a.field}>
+                      <div style={{ fontSize: "9px", fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: "2px" }}>{a.key}</div>
+                      <div style={{ fontSize: "11.5px", color: T.text, fontWeight: 500 }}>{String((selectedNode as any)[a.field] ?? "—")}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 
       {/* Legend */}
       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "16px" }}>
         {[
-          { tier: 1, label: "P1 — Strategic",          bg: T.sidebar,  text: "white" },
-          { tier: 2, label: "P2 — Management",         bg: T.accent,   text: "white" },
-          { tier: 3, label: "P3 — Operational",        bg: T.card,     text: T.text, border: T.border },
-          { tier: 4, label: "P4 — Site coordinator ×N", bg: T.bg,      text: T.textSub, border: T.border },
+          { tier: 1, label: "P1 — Strategic",            bg: T.sidebar, text: "white" },
+          { tier: 2, label: "P2 — Management",           bg: T.accent,  text: "white" },
+          { tier: 3, label: "P3 — Operational",          bg: T.card,    text: T.text, border: T.border },
+          { tier: 4, label: "P4 — Site coordinator ×N",  bg: T.bg,      text: T.textSub, border: T.border },
         ].map(l => (
-          <div key={l.tier} style={{
-            fontSize: "11px", fontWeight: 600, padding: "5px 12px", borderRadius: "6px",
-            background: l.bg, color: l.text, border: l.border ? `1.5px solid ${l.border}` : "none",
-            fontFamily: T.body,
-          }}>
+          <div key={l.tier} style={{ fontSize: "11px", fontWeight: 600, padding: "5px 12px", borderRadius: "6px", background: l.bg, color: l.text, border: l.border ? `1.5px solid ${l.border}` : "none", fontFamily: T.body }}>
             {l.label}
           </div>
         ))}
       </div>
+
+      {/* Full attribute reference table */}
+      <Card style={{ marginTop: "16px" }}>
+        <CardHeader>Full position attribute map — click any row to open detail</CardHeader>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "700px" }}>
+            <thead>
+              <tr>
+                <Th>Position</Th>
+                {ORG_ATTRS.slice(0, 5).map(a => <Th key={a.field}>{a.key}</Th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {orgNodes.map(n => (
+                <tr
+                  key={n.id}
+                  onClick={e => { e.stopPropagation(); handleSelect(n.id); }}
+                  style={{ cursor: "pointer", transition: "background 0.1s" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = T.bg)}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                >
+                  <Td><span style={{ fontWeight: 600 }}>{n.title}</span></Td>
+                  {ORG_ATTRS.slice(0, 5).map(a => <Td key={a.field}>{String((n as any)[a.field] ?? "—")}</Td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ padding: "6px 16px 10px", fontSize: "10.5px", color: T.textMuted, fontFamily: T.body }}>
+            Showing 5 of 11 attributes · Click any row to open full detail
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }
