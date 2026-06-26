@@ -613,7 +613,6 @@ const dashMetrics = [
   { label: "Net CO₂ Intensity",          value: "598",   unit: "kgCO₂/t",  target: "600",  status: "green", trend: "Target achieved ✓",  sub: "Below target since Oct" },
   { label: "Alt. Fuel Rate (TSR%)",      value: "16.4",  unit: "%",        target: "18%",  status: "amber", trend: "+4.4 pp vs baseline", sub: "Q4 target: 18%" },
 ];
-
 const positions = [
   { name: "Thermal Process Engineer",    mps: 4, onTarget: 3, exceptions: 1 },
   { name: "Electrical Engineer",         mps: 4, onTarget: 3, exceptions: 0 },
@@ -624,9 +623,76 @@ const positions = [
 
 function Dashboard() {
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"dashboard" | "annual">("dashboard");
+  const [showAnnualModal, setShowAnnualModal] = useState(false);
+
   return (
     <div style={{ fontFamily: T.body }}>
-      <PageHeader title="Department dashboard" sub={`${site.company} · ${site.plant} · ${site.period}`} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+        <div>
+          <h1 style={{ fontFamily: T.heading, fontWeight: 700, fontSize: "22px", color: T.text, margin: 0, letterSpacing: "-0.4px" }}>
+            Department dashboard
+          </h1>
+          <p style={{ fontFamily: T.body, fontSize: "12px", color: T.textSub, marginTop: "3px", marginBottom: 0 }}>
+            {site.company} · {site.plant} · {site.period}
+          </p>
+        </div>
+        {/* Mode switcher */}
+        <div style={{ display: "inline-flex", background: T.bg, border: `1.5px solid ${T.border}`, borderRadius: "8px", padding: "3px" }}>
+          {([["dashboard", "Dashboard mode"], ["annual", "Annual summary"]] as const).map(([v, label]) => (
+            <button key={v} onClick={() => { setMode(v); if (v === "annual") setShowAnnualModal(true); }} style={{
+              padding: "6px 16px", borderRadius: "6px", fontSize: "12px", fontWeight: 600,
+              background: mode === v ? T.sidebar : "transparent",
+              color: mode === v ? "white" : T.textSub,
+              borderTop: "none", borderRight: "none", borderBottom: "none", borderLeft: "none",
+              cursor: "pointer", fontFamily: T.body, transition: "all 0.15s",
+            }}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Annual Summary modal */}
+      {showAnnualModal && (
+        <div onClick={() => { setShowAnnualModal(false); setMode("dashboard"); }} style={{
+          position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: T.card, borderRadius: "14px", padding: "32px 36px",
+            border: `1.5px solid ${T.border}`, maxWidth: "480px", width: "100%",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: T.sidebar, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <CheckCircle2 size={20} color={T.sidebarActive} />
+              </div>
+              <div>
+                <div style={{ fontFamily: T.heading, fontWeight: 700, fontSize: "16px", color: T.text }}>Annual summary</div>
+                <div style={{ fontSize: "11px", color: T.textSub, marginTop: "1px" }}>Year-end closure — coming soon</div>
+              </div>
+            </div>
+            <p style={{ fontSize: "12.5px", color: T.textSub, lineHeight: 1.65, margin: "0 0 12px" }}>
+              The annual summary closes the PDCA cycle. It will show full-year actuals vs targets, CE/PD goal achievement, lessons learned, and generate next year's Annual Target Sheet pre-fill.
+            </p>
+            <div style={{ background: T.bg, borderRadius: "8px", padding: "12px 14px", marginBottom: "20px" }}>
+              {["Full-year actuals vs periodic targets for all MPs", "CE goal achievement — achieved / partial / missed", "PD milestone completion summary", "Top 3 gaps and actions taken", "Lessons learned — free text capture", "Archive FY 2025–26 · Initiate FY 2026–27 cycle"].map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: i < 5 ? "7px" : 0 }}>
+                  <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: T.sidebarActive, marginTop: "6px", flexShrink: 0 }} />
+                  <span style={{ fontSize: "11.5px", color: T.textSub, fontFamily: T.body }}>{item}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button onClick={() => { setShowAnnualModal(false); setMode("dashboard"); }} style={{ padding: "8px 18px", borderRadius: "7px", fontSize: "12px", fontWeight: 600, border: `1.5px solid ${T.border}`, background: T.card, color: T.textSub, cursor: "pointer", fontFamily: T.body }}>
+                Back to dashboard
+              </button>
+              <button onClick={() => { setShowAnnualModal(false); setMode("dashboard"); }} style={{ padding: "8px 18px", borderRadius: "7px", fontSize: "12px", fontWeight: 600, borderTop: "none", borderRight: "none", borderBottom: "none", borderLeft: "none", background: T.sidebar, color: "white", cursor: "pointer", fontFamily: T.body }}>
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dept objective */}
       <div style={{
@@ -643,7 +709,7 @@ function Dashboard() {
         <p style={{ fontSize: "12.5px", color: T.text, margin: 0, lineHeight: 1.65 }}>{site.deptObjective}</p>
       </div>
 
-      {/* KPI grid */}
+      {/* KPI grid — 4 MPs + 1 PD milestone */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "18px" }}>
         {dashMetrics.map((m, i) => {
           const borderColor = m.status === "green" ? T.success : m.status === "blue" ? T.accent : T.amber;
@@ -680,6 +746,33 @@ function Dashboard() {
             </div>
           );
         })}
+        {/* WHR PD Milestone card */}
+        <div style={{
+          background: T.card, border: `1.5px solid ${T.border}`,
+          borderTop: `3.5px solid ${T.amber}`, borderRadius: "10px", padding: "16px",
+          gridColumn: "span 1",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
+            <span style={{ fontSize: "8.5px", fontWeight: 700, padding: "1px 6px", borderRadius: "3px", background: T.amberBg, color: T.amberText, border: `1px solid ${T.amberBorder}` }}>PD</span>
+            <span style={{ fontSize: "9.5px", fontWeight: 700, color: T.textSub, textTransform: "uppercase", letterSpacing: "0.8px" }}>WHR System</span>
+          </div>
+          <div style={{ fontSize: "13px", fontWeight: 700, color: T.text, marginBottom: "8px", fontFamily: T.heading }}>8 MW by Q3</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {[
+              { q: "Q1", label: "Civil works", done: true },
+              { q: "Q2", label: "Equipment erection", done: true },
+              { q: "Q3", label: "Commissioned", done: true },
+              { q: "Q4", label: "Stabilised", done: false },
+            ].map((step, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ width: "14px", height: "14px", borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: step.done ? T.success : T.border, fontSize: "8px", color: "white", fontWeight: 700 }}>
+                  {step.done ? "✓" : ""}
+                </div>
+                <span style={{ fontSize: "10px", color: step.done ? T.successText : T.textMuted, fontFamily: T.body, fontWeight: step.done ? 600 : 400 }}>{step.q}: {step.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Exception alert */}
