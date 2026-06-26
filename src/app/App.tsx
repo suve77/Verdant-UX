@@ -320,9 +320,9 @@ const gaps = [
       "Root cause: Process control gap — no interlock between cooler fan speed and kiln fuel feed rate to maintain thermal balance during high ambient temperature periods.",
     ],
     actions: [
-      { desc: "Implement DCS interlock: cooler fan speed reduction triggers automatic kiln fuel feed adjustment to maintain thermal balance.", owner: "Thermal Process Engineer", due: "15 Jul 2025", status: "In progress", pct: 65 },
-      { desc: "Define summer operating procedure for kiln thermal management during ambient temp >40°C.", owner: "Energy Manager", due: "30 Jul 2025", status: "Open", pct: 0 },
-      { desc: "Preventive: Schedule quarterly false air measurement to detect thermal efficiency degradation early.", owner: "Thermal Process Engineer", due: "30 Sep 2025", status: "Planned", pct: 0 },
+      { type: "Corrective", desc: "Implement DCS interlock: cooler fan speed reduction triggers automatic kiln fuel feed adjustment to maintain thermal balance.", owner: "Thermal Process Engineer", due: "15 Jul 2025", status: "In progress", pct: 65 },
+      { type: "Corrective", desc: "Define summer operating procedure for kiln thermal management during ambient temp >40°C.", owner: "Energy Manager", due: "30 Jul 2025", status: "Open", pct: 0 },
+      { type: "Preventive", desc: "Schedule quarterly false air measurement to detect thermal efficiency degradation early and update standard operating procedure.", owner: "Thermal Process Engineer", due: "30 Sep 2025", status: "Planned", pct: 0 },
     ],
   },
 ];
@@ -3072,14 +3072,16 @@ function GapAnalysis() {
     <div>
       <PageHeader title="Gap analysis" sub={`Exception · ${gap.mp} · ${gap.period} · ${site.plant}`} />
 
-      {/* Meta cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "16px" }}>
+      {/* Meta cards — 4 cols × 2 rows */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px", marginBottom: "16px" }}>
         {[
           { l: "Exception type", v: gap.type,     c: T.amber },
+          { l: "Severity",       v: gap.severity,  c: T.amber },
           { l: "Actual value",   v: `${gap.actual} kcal/kg`, c: T.amber },
           { l: "Deviation",      v: gap.deviation, c: T.amber },
           { l: "Managing point", v: gap.mp,         c: T.text },
           { l: "Period",         v: gap.period,     c: T.text },
+          { l: "UCL breached",   v: `${gap.ucl} kcal/kg`,   c: T.text },
           { l: "Status",         v: gap.status,     c: T.accent },
         ].map((f, i) => (
           <Card key={i}>
@@ -3159,12 +3161,21 @@ function GapAnalysis() {
         <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
           {gap.actions.map((a, i) => {
             const s = actionStatusStyle[a.status] || { color: T.textSub, bg: T.bg };
+            const isPreventive = (a as any).type === "Preventive";
+            const typeBg    = isPreventive ? T.successBg  : T.accentLight;
+            const typeColor = isPreventive ? T.successText : T.accentText;
             return (
               <div key={i} style={{
                 paddingTop: i > 0 ? "20px" : 0,
                 paddingBottom: "20px",
                 borderBottom: i < gap.actions.length - 1 ? `1.5px solid ${T.border}` : "none",
               }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                  <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 9px", borderRadius: "5px", background: typeBg, color: typeColor, fontFamily: T.body }}>
+                    {(a as any).type ?? "Corrective"}
+                  </span>
+                  <span style={{ fontSize: "10px", color: T.textMuted, fontFamily: T.body }}>Action {i + 1} of {gap.actions.length}</span>
+                </div>
                 <p style={{ fontSize: "12.5px", color: T.text, margin: "0 0 10px", lineHeight: 1.65 }}>{a.desc}</p>
                 <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
                   <span style={{ fontSize: "11.5px", color: T.textSub }}>
