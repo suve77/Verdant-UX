@@ -2021,6 +2021,7 @@ const AT_DATA = {
     {
       id: "shc", mp: "Specific Heat Consumption (SHC)", uom: "kcal/kg clinker",
       standard: "≤ 755", polarity: "Lower is better", source: "DCS CSV export",
+      ucl: 775, lcl: 690,
       priorTarget: 740, priorActual: 748, thisYear: 720,
       periodicTargets: [
         { period: "Q1", target: "742" }, { period: "Q2", target: "735" },
@@ -2035,6 +2036,7 @@ const AT_DATA = {
     {
       id: "tsr", mp: "Alt. Fuel Feed Rate (TSR%)", uom: "%",
       standard: "Per weekly plan", polarity: "Higher is better", source: "Manual",
+      ucl: null, lcl: 8,
       priorTarget: 12, priorActual: 12, thisYear: 18,
       periodicTargets: [
         { period: "Q1", target: "13%" }, { period: "Q2", target: "15%" },
@@ -2049,6 +2051,7 @@ const AT_DATA = {
   sectionB: [
     {
       id: "ce1",
+      uom: "kcal/kg clinker",
       statement: "Reduce SHC from 748 to 720 kcal/kg clinker through optimised combustion and false air reduction.",
       source: "ESG Strategy FY2025",
       parentGoal: "Reduce plant energy intensity by 15%",
@@ -2378,7 +2381,7 @@ function ControlPointsTable({ cps, color }: { cps: any[]; color: string }) {
 function AnnualTargets() {
   const [status] = useState("Active");
   const [sectionOpen, setSectionOpen] = useState({ A: true, B: true, C: true });
-  const [expandedA, setExpandedA] = useState<Record<string, boolean>>({ shc: true });
+  const [expandedA, setExpandedA] = useState<Record<string, boolean>>({ shc: true, tsr: true });
   const [expandedB, setExpandedB] = useState<Record<string, boolean>>({});
   const [expandedC, setExpandedC] = useState<Record<string, boolean>>({});
   const [showToast, setShowToast] = useState(true);
@@ -2518,26 +2521,18 @@ function AnnualTargets() {
         />
         {sectionOpen.A && (
           <div style={{ padding: "12px 16px" }}>
-            {/* Column headers */}
-            <div style={{
-              display: "grid", gridTemplateColumns: "2fr 80px 100px 110px 110px 130px 120px 36px",
-              gap: "8px", padding: "6px 14px 8px",
-              borderBottom: `1.5px solid ${T.border}`, marginBottom: "8px",
-            }}>
-              {["Managing Point", "UOM", "Standard", "Prior Target", "Prior Actual", "This Year Target", "Improvement %", ""].map((h, i) => (
-                <div key={i} style={{
-                  fontSize: "9px", fontWeight: 700, color: T.textSub,
-                  textTransform: "uppercase", letterSpacing: "0.7px", fontFamily: T.body,
-                  whiteSpace: "nowrap",
-                }}>{h}</div>
-              ))}
-            </div>
             {AT_DATA.sectionA.map(mp => {
               const expanded = !!expandedA[mp.id];
               const thisYearVal = parseFloat(aTargets[mp.id] ?? String(mp.thisYear));
               return (
                 <div key={mp.id} style={{ border: `1.5px solid ${T.border}`, borderRadius: "8px", marginBottom: "10px", overflow: "hidden" }}>
-                  {/* Collapsed row header */}
+                  {/* Card column labels */}
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 80px 100px 110px 110px 130px 120px 36px", gap: "8px", padding: "5px 14px", background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+                    {["Managing Point", "UOM", "Standard", "Prior Target", "Prior Actual", "This Year Target", "Improvement %", ""].map((h, i) => (
+                      <div key={i} style={{ fontSize: "8.5px", fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", fontFamily: T.body }}>{h}</div>
+                    ))}
+                  </div>
+                  {/* Data row */}
                   <div
                     onClick={() => toggleA(mp.id)}
                     style={{
@@ -2563,10 +2558,22 @@ function AnnualTargets() {
                       <path d="M3 5l4 4 4-4" stroke={SA.color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
-
                   {/* Expanded content */}
                   {expanded && (
                     <div style={{ padding: "16px 18px", background: "white" }}>
+                      {/* Control limits */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px", padding: "10px 14px", background: T.amberBg, borderRadius: "7px", border: `1px solid ${T.amberBorder}` }}>
+                        <span style={{ fontSize: "9px", fontWeight: 700, color: T.amberText, textTransform: "uppercase", letterSpacing: "0.8px", flexShrink: 0, fontFamily: T.body }}>Control limits</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                          <span style={{ fontSize: "11px", color: T.amberText, fontWeight: 600, fontFamily: T.body }}>UCL</span>
+                          <input defaultValue={(mp as any).ucl ?? "—"} style={{ width: "68px", fontFamily: T.body, fontSize: "12px", fontWeight: 600, color: T.amberText, background: "white", border: `1px solid ${T.amberBorder}`, borderRadius: "4px", padding: "4px 8px", outline: "none" }} />
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                          <span style={{ fontSize: "11px", color: T.amberText, fontWeight: 600, fontFamily: T.body }}>LCL</span>
+                          <input defaultValue={(mp as any).lcl ?? "—"} style={{ width: "68px", fontFamily: T.body, fontSize: "12px", fontWeight: 600, color: T.amberText, background: "white", border: `1px solid ${T.amberBorder}`, borderRadius: "4px", padding: "4px 8px", outline: "none" }} />
+                        </div>
+                        <span style={{ fontSize: "10px", color: T.amberText, opacity: 0.7, fontFamily: T.body }}>→ used as monitoring chart reference lines</span>
+                      </div>
                       <PeriodicTargetsTable
                         rows={aPeriodic[mp.id] ?? mp.periodicTargets}
                         onChange={(i, field, v) => setAPeriodic(p => ({
@@ -2605,32 +2612,27 @@ function AnnualTargets() {
         />
         {sectionOpen.B && (
           <div style={{ padding: "12px 16px" }}>
-            {/* Column headers — same grid as collapsed rows */}
-            <div style={{
-              display: "grid", gridTemplateColumns: "2fr 110px 110px 130px 120px 36px",
-              gap: "8px", padding: "6px 14px 8px",
-              borderBottom: `1.5px solid ${T.border}`, marginBottom: "8px",
-            }}>
-              {["Goal Statement", "Prior Target", "Prior Actual", "This Year Target", "Improvement %", ""].map((h, i) => (
-                <div key={i} style={{ fontSize: "9px", fontWeight: 700, color: T.textSub, textTransform: "uppercase", letterSpacing: "0.7px", fontFamily: T.body, whiteSpace: "nowrap" }}>{h}</div>
-              ))}
-            </div>
             {AT_DATA.sectionB.map(goal => {
               const expanded = !!expandedB[goal.id];
               return (
                 <div key={goal.id} style={{ border: `1.5px solid ${T.border}`, borderRadius: "8px", marginBottom: "10px", overflow: "hidden" }}>
-                  {/* Collapsed row — matches header grid */}
+                  {/* Card column labels */}
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 80px 110px 110px 130px 120px 36px", gap: "8px", padding: "5px 14px", background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+                    {["CE Goal", "UOM", "Prior Target", "Prior Actual", "This Year Target", "Improvement %", ""].map((h, i) => (
+                      <div key={i} style={{ fontSize: "8.5px", fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", fontFamily: T.body }}>{h}</div>
+                    ))}
+                  </div>
+                  {/* Data row */}
                   <div
                     onClick={() => toggleB(goal.id)}
                     style={{
-                      display: "grid", gridTemplateColumns: "2fr 110px 110px 130px 120px 36px",
+                      display: "grid", gridTemplateColumns: "2fr 80px 110px 110px 130px 120px 36px",
                       alignItems: "center", gap: "8px",
                       padding: "11px 14px", cursor: "pointer",
                       background: expanded ? SB.light : "white",
                       borderBottom: expanded ? `1.5px solid ${T.border}` : "none",
                     }}
                   >
-                    {/* Goal statement + meta */}
                     <div>
                       <div style={{ display: "flex", alignItems: "flex-start", gap: "7px", marginBottom: "4px" }}>
                         <span style={{ fontSize: "8.5px", fontWeight: 700, padding: "1px 6px", borderRadius: "3px", background: SB.bg, color: SB.color, flexShrink: 0, marginTop: "2px", border: `1px solid ${SB.color}40` }}>CE</span>
@@ -2639,14 +2641,9 @@ function AnnualTargets() {
                       <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
                         <span style={{ fontSize: "9.5px", color: T.textSub, fontFamily: T.body }}>Source: <strong>{goal.source}</strong></span>
                         <span style={{ fontSize: "9.5px", color: SB.color, background: SB.bg, padding: "1px 6px", borderRadius: "3px", fontWeight: 600, fontFamily: T.body }}>↗ {goal.parentGoal}</span>
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          <span style={{ fontSize: "9px", color: T.textMuted, fontFamily: T.body }}>Alloc: {goal.allocation}%</span>
-                          <div style={{ width: "50px", height: "4px", background: T.border, borderRadius: "99px", overflow: "hidden" }}>
-                            <div style={{ width: `${goal.allocation}%`, height: "100%", background: SB.color, borderRadius: "99px" }} />
-                          </div>
-                        </div>
                       </div>
                     </div>
+                    <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "4px", background: SB.bg, color: SB.color, whiteSpace: "nowrap" }}>{(goal as any).uom ?? "—"}</span>
                     <ReadOnly value={goal.priorTarget} />
                     <ReadOnly value={goal.priorActual} />
                     <EditableInput value={String(goal.thisYear)} onChange={() => {}} isNumeric />
@@ -2686,21 +2683,17 @@ function AnnualTargets() {
         />
         {sectionOpen.C && (
           <div style={{ padding: "12px 16px" }}>
-            {/* Column headers — same grid as collapsed rows */}
-            <div style={{
-              display: "grid", gridTemplateColumns: "2fr 180px 36px",
-              gap: "8px", padding: "6px 14px 8px",
-              borderBottom: `1.5px solid ${T.border}`, marginBottom: "8px",
-            }}>
-              {["Goal Statement", "Source / Plan", ""].map((h, i) => (
-                <div key={i} style={{ fontSize: "9px", fontWeight: 700, color: T.textSub, textTransform: "uppercase", letterSpacing: "0.7px", fontFamily: T.body, whiteSpace: "nowrap" }}>{h}</div>
-              ))}
-            </div>
             {AT_DATA.sectionC.map(goal => {
               const expanded = !!expandedC[goal.id];
               return (
                 <div key={goal.id} style={{ border: `1.5px solid ${T.border}`, borderRadius: "8px", marginBottom: "10px", overflow: "hidden" }}>
-                  {/* Collapsed row — matches header grid */}
+                  {/* Card column labels */}
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 180px 36px", gap: "8px", padding: "5px 14px", background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+                    {["PD Goal", "Source / Plan", ""].map((h, i) => (
+                      <div key={i} style={{ fontSize: "8.5px", fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", fontFamily: T.body }}>{h}</div>
+                    ))}
+                  </div>
+                  {/* Data row */}
                   <div
                     onClick={() => toggleC(goal.id)}
                     style={{
@@ -2784,7 +2777,7 @@ function CustomTooltip({ active, payload, label }: any) {
       <div style={{ color: d?.exc ? T.amber : T.success, fontWeight: 600 }}>
         Actual: {d?.actual}{d?.exc ? " ⚠ Exception" : ""}
       </div>
-      <div style={{ color: T.textSub, marginTop: "3px" }}>Target: {d?.target}</div>
+      <div style={{ color: T.successText, marginTop: "3px" }}>Periodic target: {d?.target}</div>
     </div>
   );
 }
@@ -2934,13 +2927,14 @@ function Monitoring() {
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
             <div>
               <div style={{ fontFamily: T.heading, fontWeight: 700, fontSize: "14px", color: T.text }}>{mp.label} · {mp.uom}</div>
-              <div style={{ fontSize: "11px", color: T.textSub, marginTop: "3px" }}>Monthly actuals vs target · UCL: {mp.ucl} · LCL: {mp.lcl}</div>
+              <div style={{ fontSize: "11px", color: T.textSub, marginTop: "3px" }}>Monthly actuals vs periodic target · UCL: {mp.ucl} · LCL: {mp.lcl}</div>
             </div>
             <div style={{ display: "flex", gap: "14px" }}>
               {[
-                { label: "Target",    style: { borderTop: `2px dashed ${T.accent}`, width: "20px" } },
-                { label: "UCL/LCL",  style: { borderTop: `2px dashed ${T.amber}`,  width: "20px" } },
-                { label: "Exception", dot: T.amber },
+                { label: "Periodic target", style: { borderTop: `2px dashed ${T.success}`, width: "20px" } },
+                { label: "Annual target",   style: { borderTop: `2px dashed ${T.accent}`,  width: "20px" } },
+                { label: "UCL/LCL",         style: { borderTop: `2px dashed ${T.amber}`,   width: "20px" } },
+                { label: "Exception",       dot: T.amber },
               ].map(l => (
                 <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "10.5px", color: T.textSub }}>
                   {l.dot
@@ -2957,10 +2951,19 @@ function Monitoring() {
               <XAxis dataKey="m" tick={{ fontSize: 11, fill: T.textSub, fontFamily: T.body }} axisLine={{ stroke: T.border }} tickLine={false} />
               <YAxis domain={mp.domain} tick={{ fontSize: 11, fill: T.textSub, fontFamily: T.body }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
+              <Line
+                type="linear"
+                dataKey="target"
+                stroke={T.success}
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                dot={false}
+                activeDot={false}
+              />
               <ReferenceLine y={mp.ucl} stroke={T.amber} strokeDasharray="5 3" strokeWidth={1.5}
                 label={{ value: `UCL ${mp.ucl}`, position: "insideTopRight", fill: T.amber, fontSize: 10, fontWeight: 700 }} />
               <ReferenceLine y={mp.annualTarget} stroke={T.accent} strokeDasharray="8 4" strokeWidth={1.5}
-                label={{ value: `Target ${mp.annualTarget}`, position: "insideBottomRight", fill: T.accent, fontSize: 10, fontWeight: 700 }} />
+                label={{ value: `Annual target ${mp.annualTarget}`, position: "insideBottomRight", fill: T.accent, fontSize: 10, fontWeight: 700 }} />
               <ReferenceLine y={mp.lcl} stroke={T.amber} strokeDasharray="5 3" strokeWidth={1.5}
                 label={{ value: `LCL ${mp.lcl}`, position: "insideBottomRight", fill: T.amber, fontSize: 10, fontWeight: 700 }} />
               <Line
